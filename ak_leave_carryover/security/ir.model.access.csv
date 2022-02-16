@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_leave_carry_over,access_leave_carry_over,model_leave_carry_over,hr_holidays.group_hr_holidays_user,1,1,1,1

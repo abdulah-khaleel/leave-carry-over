@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <record id='carryover_action' model='ir.actions.act_window'>
+        <field name="name">Time Off Carry Over</field>
+        <field name="res_model">leave.carry.over</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <record id="leave_carryover_list_view" model="ir.ui.view">
+        <field name="name">leave.carry.over.list.view</field>
+        <field name="model">leave.carry.over</field>
+        <field name="arch" type="xml">
+            <tree string="Time Off Carry Over">
+                <field name="name"/>
+                <field name="source_leave_type_id"/>
+                <field name="dest_leave_type_id"/>
+                <field name="create_date" string="Created On"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-warning="state in ('scheduled')" decoration-success="state == 'done'"/>
+
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_leave_carryover_filter" model="ir.ui.view">
+        <field name="name">leave.carryover.filter</field>
+        <field name="model">leave.carry.over</field>
+        <field name="arch" type="xml">
+            <search string="Search Carry Over">
+                <field name="name"/>
+                <field name="source_leave_type_id"/>
+                <field name="dest_leave_type_id"/>
+                <field name="employee_ids" string="Employee" filter_domain="[('employee_ids', 'child_of', self)]"/>
+                <filter domain="[('state','=','draft')]" string="Draft" name="draft"/>
+                <filter domain="[('state','=','scheduled')]" string="Scheduled" name="scheduled"/>
+                <filter domain="[('state','=','done')]" string="Done" name="done"/>
+                <separator/>
+                    <filter string="This Year" name="this_year" 
+                        domain="[('create_date', '&gt;=',((datetime.date.today()- datetime.timedelta(days=0)).strftime('%Y-01-01 00:00:00'))),
+                            ('create_date', '&lt;=',((datetime.date.today()- datetime.timedelta(days=0)).strftime('%Y-12-31 23:59:59')))]"/> 
+                    <filter string="Previous Year" name="prev_year" 
+                        domain="[('create_date', '&gt;=',((datetime.date.today()- datetime.timedelta(days=365)).strftime('%Y-01-01 00:00:00'))),
+                            ('create_date', '&lt;=',((datetime.date.today()- datetime.timedelta(days=365)).strftime('%Y-12-31 23:59:59')))]"/> 
+                <group expand="0" string="Group By">
+                    <filter name="group_by_source_leave_type" string="Carry Over From" context="{'group_by':'source_leave_type_id'}"/>
+                    <filter name="group_by_dest_leave_type" string="Carry Over To" context="{'group_by':'dest_leave_type_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+
+    <record id="leave_carryover_form" model="ir.ui.view">
+        <field name="name">Leave Carry Over Form</field>
+        <field name="model">leave.carry.over</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="generate_carryover" class="oe_highlight" string="GENERATE CARRY OVER" type="object" attrs="{'invisible':['|',('carryover_executed', '=', True),('state','!=','draft')]}"/>
+                    <button name="re_generate_carryover" class="oe_highlight" string="RE-COMPUTE" type="object" attrs="{'invisible':['|',('allocations_generated', '=', False),('state','!=','draft')]}"/>
+                    <button name="confirm_carryover" class="oe_highlight" string="VALIDATE" type="object" attrs="{'invisible':['|',('carryover_executed', '!=', True),('state','!=','draft')]}"/>
+                    <button name="cancel_carryover" string="CANCEL" type="object" 
+                            confirm="Are you sure you want to cancel? This will delete any allocations created by this carry over record." 
+                            attrs="{'invisible':[('state','not in',['draft','scheduled'])]}"/>
+                            <button name="reset_to_draft"  string="Reset To Draft" type="object" attrs="{'invisible':[('state','!=','cancel')]}"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,done,cancel"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" type="object" name="get_allocations_records" icon="fa-list-ul" attrs="{'invisible':[('allocations_count', '=', 0)]}">
+                            <field string="Carry Over Allocations" name="allocations_count" widget="statinfo"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h2><field name="name" placeholder="e.g. Carry Over for 2021 - Sales Dept." attrs="{'readonly': [('state', 'in', ['cancel','done','scheduled'])]}" required="1"/></h2>
+                    </div>
+                    <group name="Upper Section">
+                        <group name="Upper right">
+                             <field name="source_leave_type_id" attrs="{'readonly': [('state', 'in', ['cancel','done','scheduled'])]}"/>
+                             <field name="dest_leave_type_id" attrs="{'readonly': [('state', 'in', ['cancel','done','scheduled'])]}"/>
+                        </group>
+                        <group name="Upper left">
+                        </group>
+                    </group>
+                    <group name="Second Section">
+                        <group name="Upper right">
+                             <field name="carryover_method" attrs="{'readonly': [('state', 'in', ['cancel','done','scheduled'])]}"/>
+                             <field name="carryover_percentage" attrs="{'invisible': [('carryover_method', '!=', 'percentage')],'required': [('carryover_method', '=', 'percentage')],'readonly': [('state', 'in', ['cancel','done','scheduled'])]}"  />
+                             <field name="limit_carryover" attrs="{'readonly': [('state', 'in', ['cancel','done','scheduled'])]}"/>
+                             <field name="carryover_days" attrs="{'invisible': [('limit_carryover', '=', False)],'required': [('limit_carryover', '=', True)],'readonly': [('state', 'in', ['cancel','done','scheduled'])]}"  />
+                             <field name="carryover_executed" invisible="1"/>
+                             <field name="allocations_generated" invisible="1"/>
+                        </group>
+                        <group name="Upper left">
+                            <field name="schedule_carryover" attrs="{'readonly': [('state', 'in', ['cancel','done','scheduled'])]}"/>
+                            <field name="scheduled_date" attrs="{'invisible': [('schedule_carryover', '=', False)],'required': [('schedule_carryover', '=', True)],'readonly': [('state', 'in', ['cancel','done','scheduled'])]}"  />
+                            
+                        </group>
+                    </group>
+                    <group string="Employees">
+                          <field name="employee_ids" widget="one2many_list" nolabel="1" attrs="{'readonly': [('state', 'in', ['cancel','done','scheduled'])]}">
+                            <tree string="Employee"  editable="bottom">
+                                <field name="name"/>
+                                <field name="job_id"/>
+                                <field name="department_id"/>
+                                <field name="work_email"/>
+                                <field name="company_id" invisible="1"/>
+                            </tree>
+                        </field>
+                    </group>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" widget="mail_followers" groups="base.group_user"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <menuitem
+    id="leave_carryover_menu"
+    action="carryover_action"
+    name="Time Off Carry Over"
+    parent="hr_holidays.menu_hr_holidays_configuration"
+    groups="hr_holidays.group_hr_holidays_user"
+    
+    sequence="10"/>
+
+    <!-- Scheduale action to process scheduled carry over records-->
+    <record id="process_scheduled_carryover_records" model="ir.cron">
+        <field name="name">Time Off: Process scheduled carry over</field>
+        <field name="model_id" ref="model_leave_carry_over"/>
+        <field name="type">ir.actions.server</field>
+        <field name="state">code</field>
+        <field name="code">model.process_scheduled_carryover()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="numbercall">-1</field>
+        <field name="active" eval="True"/>
+        <field name="doall" eval="False"/>
+    </record>
+
+</odoo>
