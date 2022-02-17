@@ -25,6 +25,7 @@
         'views/carryover_views.xml',
         'views/hr_leave_allocation_views.xml',
     ],
+    'images': ["static/description/banner.png"],
     'license': 'LGPL-3',
     'application': True,
     'installable': True,
