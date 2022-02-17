@@ -49,14 +49,13 @@
         </field>
     </record>
 
-
     <record id="leave_carryover_form" model="ir.ui.view">
         <field name="name">Leave Carry Over Form</field>
         <field name="model">leave.carry.over</field>
         <field name="arch" type="xml">
             <form>
                 <header>
-                    <button name="generate_carryover" class="oe_highlight" string="GENERATE CARRY OVER" type="object" attrs="{'invisible':['|',('carryover_executed', '=', True),('state','!=','draft')]}"/>
+                    <button name="generate_carryover" class="oe_highlight" string="GENERATE CARRY OVER" type="object" attrs="{'invisible':['|','|',('carryover_executed', '=', True),('allocations_generated', '=', True),('state','!=','draft')]}"/>
                     <button name="re_generate_carryover" class="oe_highlight" string="RE-COMPUTE" type="object" attrs="{'invisible':['|',('allocations_generated', '=', False),('state','!=','draft')]}"/>
                     <button name="confirm_carryover" class="oe_highlight" string="VALIDATE" type="object" attrs="{'invisible':['|',('carryover_executed', '!=', True),('state','!=','draft')]}"/>
                     <button name="cancel_carryover" string="CANCEL" type="object" 
@@ -88,8 +87,8 @@
                              <field name="carryover_percentage" attrs="{'invisible': [('carryover_method', '!=', 'percentage')],'required': [('carryover_method', '=', 'percentage')],'readonly': [('state', 'in', ['cancel','done','scheduled'])]}"  />
                              <field name="limit_carryover" attrs="{'readonly': [('state', 'in', ['cancel','done','scheduled'])]}"/>
                              <field name="carryover_days" attrs="{'invisible': [('limit_carryover', '=', False)],'required': [('limit_carryover', '=', True)],'readonly': [('state', 'in', ['cancel','done','scheduled'])]}"  />
-                             <field name="carryover_executed" invisible="1"/>
-                             <field name="allocations_generated" invisible="1"/>
+                             <field name="carryover_executed" />
+                             <field name="allocations_generated" />
                         </group>
                         <group name="Upper left">
                             <field name="schedule_carryover" attrs="{'readonly': [('state', 'in', ['cancel','done','scheduled'])]}"/>

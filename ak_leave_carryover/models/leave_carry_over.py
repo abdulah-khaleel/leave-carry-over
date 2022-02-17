@@ -5,7 +5,7 @@ from odoo.exceptions import UserError, ValidationError
 from odoo.tools.translate import _
 
 
-class CarryOver(models.Model):
+class LeaveCarryOver(models.Model):
     _name = 'leave.carry.over'
     _inherit = ['mail.thread','mail.activity.mixin']
     _description = 'Carry Over'
@@ -73,17 +73,26 @@ class CarryOver(models.Model):
             'domain': [('leave_carryover_id', '=', self.id)],
         }
 
-    def generate_notification(self, title, message):
-        self.env['bus.bus'].sendone(
-                (self._cr.dbname,
-                'res.partner',
-                self.env.user.partner_id.id),
-                {
-                    'type': 'simple_notification',
-                    'sticky': False,
-                    'warning': True,
-                    'title': _(title),
-                    'message': _(message)})
+    def generate_notification(self,title,message):
+        pass
+    
+    def display_notification(self,title, message, type):
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': title,
+                'message': message,
+                'type': type,
+                'sticky': False,
+            }
+        }
+
+    def reload_page(self):
+       return {
+            'type': 'ir.actions.client',
+            'tag': 'reload',
+        }
 
     def calculate_balance(self, employee):
         # get all allocations
@@ -125,7 +134,7 @@ class CarryOver(models.Model):
                 self.write({
                     'state': 'scheduled',
                 })
-                self.generate_notification('Carry Over Scheduled',f'This carry over has been scheduled to run on {str(self.scheduled_date)}.')
+                # self.generate_notification('Carry Over Scheduled',f'This carry over has been scheduled to run on {str(self.scheduled_date)}.')
                 return
             if self.limit_carryover:
                 for employee in self.employee_ids:
@@ -145,12 +154,12 @@ class CarryOver(models.Model):
                 [('leave_carryover_id', '=', self.id)])
             self.allocations_generated = True
             if len(carryover_allocations) == 0:
-                self.generate_notification('No Balance','No leave balance found for any of the selected employees. You may update the employees list and try again.')
+                return self.display_notification('No Balance','No leave balance found for any of the selected employees. You may update the employees list and try again.','warning')
             else:
                 self.write({
                     'carryover_executed': True
                 })
-                self.generate_notification('Allocations created','Carry over allocations are created and are in a draft state. You can review them and validate this carry over record once reviewed.')
+                # self.generate_notification('Allocations created','Carry over allocations are created and are in a draft state. You can review them and validate this carry over record once reviewed.')
         else:
             raise UserError(
                 _('You need to select at least 1 employee before validating this carry over transaction'))
@@ -158,11 +167,12 @@ class CarryOver(models.Model):
     def re_generate_carryover(self):
         carryover_allocations = self.env['hr.leave.allocation'].search(
                 [('leave_carryover_id', '=', self.id)])
-        print(f'++++++++++++ regenerating leave allocations again ...')
         carryover_allocations.unlink()
-        print(f'++++++++++++ regenerating leave allocations again ...')
-        
         self.generate_carryover()
+        carryover_allocations = self.env['hr.leave.allocation'].search(
+                [('leave_carryover_id', '=', self.id)])
+        if len(carryover_allocations) == 0:
+                return self.display_notification('No Balance','No leave balance found for any of the selected employees. You may update the employees list and try again.','warning')
     
     def confirm_carryover(self):
         carryover_allocations = self.env['hr.leave.allocation'].search(
@@ -172,27 +182,26 @@ class CarryOver(models.Model):
                 rec.update({
                     'state': 'validate'
                 })
-            self.generate_notification('Allocations Validated','Carry Over is complete. All allocations created from this Carry Over record were validated.')
+            # self.generate_notification('Allocations Validated','Carry Over is complete. All allocations created from this Carry Over record were validated.')
             self.write({
                 'state': 'done'
             })
-        else:
-            self.generate_notification('No Balance','No leave balance found for any of the selected employees, and no carry over allocations were created. You may cancel this record.')
 
 
     def cancel_carryover(self):
-        carryover_allocations = self.env['hr.leave.allocation'].search(
-            [('leave_carryover_id', '=', self.id)])
-        if len(carryover_allocations) > 0:
-            for rec in carryover_allocations:
-                rec.unlink()
-            self.generate_notification('Allocations Deleted','All allocations created from this Carry Over record were deleted.')
         self.write({
             'carryover_executed': False,
             'state': 'cancel',
             'allocations_generated': False
         })
+        carryover_allocations = self.env['hr.leave.allocation'].search(
+            [('leave_carryover_id', '=', self.id)])
+        if len(carryover_allocations) > 0:
+            for rec in carryover_allocations:
+                rec.unlink()
+            # return self.display_notification('Allocations Deleted','All allocations created from this Carry Over record were deleted.','warning')
 
+    
     def reset_to_draft(self):
         self.write({
             'state': 'draft'
@@ -238,4 +247,4 @@ class CarryOver(models.Model):
             raise UserError(
                         'You can only delete carry over records that are in a draft state.'
                     )
-        return super(CarryOver, self).unlink()
+        return super(LeaveCarryOver, self).unlink()

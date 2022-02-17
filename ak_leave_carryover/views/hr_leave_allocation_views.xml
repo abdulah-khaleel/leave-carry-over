@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    
+    <!-- Un-comment if you would like to see the carry_over_id field in allocation records -->
+
     <!-- <record id="hr_leave_allocation_view_form_carry_over" model="ir.ui.view">
         <field name="name">hr.leave.allocation.view.form.carry.over</field>
         <field name="model">hr.leave.allocation</field>
@@ -29,7 +30,5 @@
             </xpath>
         </field>
     </record>
-
-
 
 </odoo>

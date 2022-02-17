@@ -1,4 +1,4 @@
-Time Off Carry Over for Odoo
+Time Off Carry Over for Odoo v15
 
 License: General Public License, Version 3 (LGPL v3).
 Author and maintainer: Abdullah Khalil (abdulah.khaleel@gmail.com).
