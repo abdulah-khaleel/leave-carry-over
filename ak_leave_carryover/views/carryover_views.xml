@@ -56,7 +56,7 @@
         <field name="arch" type="xml">
             <form>
                 <header>
-                    <button name="generate_carryover" class="oe_highlight" string="GENERATE CARRY OVER" type="object" attrs="{'invisible':['|',('carryover_executed', '=', True),('state','!=','draft')]}"/>
+                    <button name="generate_carryover" class="oe_highlight" string="GENERATE CARRY OVER" type="object" attrs="{'invisible':['|','|',('carryover_executed', '=', True),('allocations_generated', '=', True),('state','!=','draft')]}"/>
                     <button name="re_generate_carryover" class="oe_highlight" string="RE-COMPUTE" type="object" attrs="{'invisible':['|',('allocations_generated', '=', False),('state','!=','draft')]}"/>
                     <button name="confirm_carryover" class="oe_highlight" string="VALIDATE" type="object" attrs="{'invisible':['|',('carryover_executed', '!=', True),('state','!=','draft')]}"/>
                     <button name="cancel_carryover" string="CANCEL" type="object" 
